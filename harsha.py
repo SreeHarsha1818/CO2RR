@@ -1,30 +1,39 @@
-"""
-Helper module with the requested updated recovery/topology settings.
+"""Executable helpers for recovery caps and CO-dissociation step topologies."""
 
-This mirrors the current recovery cap semantics used in run_mace_phonons.py
-so the key values are easy to find in one place.
-"""
+from typing import Dict, Tuple
 
-# Recovery hard caps
 MAX_RECOVERY_ATTEMPTS = 10
 MAX_RECOVERY_ITERS = 10
 
-
 def bounded_recovery_iters(max_recovery_iters: int = MAX_RECOVERY_ITERS,
                            max_recovery_attempts: int = MAX_RECOVERY_ATTEMPTS) -> int:
-    """Return hard-bounded recovery iterations (same policy as workflow)."""
     return min(int(max_recovery_iters), int(max_recovery_attempts))
 
+def get_recovery_caps(cfg: Dict) -> Tuple[int, int]:
+    max_attempts = int(cfg.get("max_recovery_attempts", MAX_RECOVERY_ATTEMPTS))
+    cfg_iters = int(cfg.get("max_recovery_iters", max_attempts))
+    return max_attempts, min(cfg_iters, max_attempts)
 
-# Added CO-dissociation topology keys
-CO_DISSOCIATION_TOPOLOGY_KEYS = (
-    "05_OH_from_CO_diss",
-    "05_H2O_from_CO_diss",
-    "06_C_from_CO_diss",
-)
-
-
-UPDATED_NOTE = (
-    "Recovery loop is bounded; escalating random per-cycle perturbation "
-    "is removed; CO-dissociation topologies are explicitly defined."
-)
+CO_DISSOCIATION_TOPOLOGY_RULES = {
+    "05_OH_from_CO_diss": {
+        "surf_atom": "any",
+        "req_bonds": [("O", "H")],
+        "forb_bonds": [("C", "O"), ("C", "H")],
+        "co_min": None, "co_max": None, "co_triple": False,
+        "oh_count": 1, "ch_count": 0,
+    },
+    "05_H2O_from_CO_diss": {
+        "surf_atom": "any",
+        "req_bonds": [("O", "H")],
+        "forb_bonds": [("C", "O"), ("C", "H")],
+        "co_min": None, "co_max": None, "co_triple": False,
+        "oh_count": 2, "ch_count": 0, "h2o_present": True,
+    },
+    "06_C_from_CO_diss": {
+        "surf_atom": "C",
+        "req_bonds": [],
+        "forb_bonds": [("C", "O"), ("C", "H"), ("O", "H")],
+        "co_min": None, "co_max": None, "co_triple": False,
+        "oh_count": 0, "ch_count": 0,
+    },
+}
